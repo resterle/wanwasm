@@ -1,0 +1,29 @@
+00 61 73 6d     -> header
+01 00 00 00     -> version
+-----
+01 07           -> type section size 7
+01              -> 1 type
+60              -> function
+02              -> two parameters
+7F 7F           -> parameter types (bothe i32)
+01              -> one function return
+7F              -> function return type (i32)
+-----
+03 02           -> function section size 2
+01              -> one function
+00              -> type index
+-----
+07 07           -> export section size 7
+01              -> one export
+03 61 64 64     -> name: 3 chars "add"
+00              -> type function
+00              -> index 0
+-----
+0A 09           -> code section size 9 
+01              -> one function
+07              -> size of function
+00              -> size of variables 
+20 00           -> push first parameter
+20 01           -> push second parameter
+6A              -> add and push
+0B              -> end of expression

@@ -1,0 +1,16 @@
+<html>
+    <head>
+        <title>simple wasm</title>
+    </head>
+    <body>
+        <script>
+            const importObject = {};
+
+            WebAssembly.instantiateStreaming(fetch("./super_simple.wasm"), importObject)
+            .then((obj) => {
+                console.log(obj)
+                console.log(obj.instance.exports.add(39, 3))
+            })
+        </script>
+    </body>
+</html>

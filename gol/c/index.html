@@ -1,0 +1,79 @@
+<html>
+    <head>
+        <title>simple wasm</title>
+    </head>
+    <body>
+        <h3>Game of live in C</h3>
+        <canvas id="canvas">The browser doesn't support the canvas element</canvas>
+        <script>
+            const witdh = 8000
+            const height = 4800
+            const pxSize = 4
+            const lineLen = witdh/pxSize
+            const elements = (witdh/pxSize)*(height/pxSize)
+            
+            const memory = new WebAssembly.Memory({
+                initial: 100,
+                maximum: 100,
+            });
+
+            const mb = new Uint8Array(memory.buffer);
+
+            const canvas = document.getElementById("canvas")
+            canvas.setAttribute("width", witdh)
+            canvas.setAttribute("height", height)
+            const ctx = canvas.getContext('2d');
+
+            let hb = 0
+
+            const drawCanvas = function() {
+                // set fill and stroke styles
+                ctx.fillStyle = '#3a3a3a';
+                ctx.strokeStyle = 'black';
+                ctx.fillRect(0, 0, witdh, height);
+
+                ctx.fillStyle = '#e0b43b'
+                for (let i = 0; i < elements/8; i++) {
+                    let v = mb[hb+i]
+                    for(let j = 0; j < 8; j++) {
+                        if(v&1){
+                            let ri = (8 * i)+j
+                            let x = (ri * pxSize) % witdh
+                            let y = Math.trunc((ri*pxSize) / witdh)*pxSize
+                            ctx.fillRect(x, y, pxSize, pxSize);
+                        }
+                        v = v >> 1
+                    }
+                }
+            }
+
+            var shuffle = function(pb) {
+                for(let i = 0; i < elements/4; i++ ) {
+                    mb[i] = Math.random() * 127
+                }
+            }
+
+            const importObject = {
+                env: {
+                    memory: memory,
+                    logJs: n => console.log("WASM "+n)
+                }
+            };
+
+            WebAssembly.instantiateStreaming(fetch("./gol.wasm"), importObject)
+            .then((obj) => {
+                console.log(obj.instance)
+                hb = obj.instance.exports.get_heap_base()
+                obj.instance.exports.init_glider(elements, lineLen)
+                //shuffle()
+                drawCanvas()
+                let animate = function() {
+                    obj.instance.exports.gen_n();
+                    drawCanvas()
+                    window.requestAnimationFrame(animate);
+                }
+                animate()
+            });
+        </script>
+    </body>
+</html>

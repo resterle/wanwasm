@@ -1,0 +1,177 @@
+<html>
+    <head>
+        <title>Game of live JS</title>
+    </head>
+    <body>
+        <h3>Game of live JS</h3>
+        <canvas id="canvas">The browser doesn't support the canvas element</canvas>
+        <script src="wasm_exec.js"></script>
+        <script>
+            var elements = []
+            var svgWith = 8000
+            var svgHeight = 4800
+            var pxSize = 4
+            var lineLen = svgWith/pxSize
+            var elements = (svgWith/pxSize)*(svgHeight/pxSize)
+
+            var genN = []
+
+            var canvas = document.getElementById("canvas")
+            canvas.setAttribute("width", svgWith)
+            canvas.setAttribute("height", svgHeight)
+            let ctx = canvas.getContext('2d');
+
+            const go = new Go();
+
+            var drawCanvas = function() {
+                // set fill and stroke styles
+                ctx.fillStyle = '#3a3a3a';
+                ctx.strokeStyle = 'black';
+                ctx.fillRect(0, 0, svgWith, svgHeight);
+
+                ctx.fillStyle = '#e0b43b'
+                for (let i = 0; i < genN.length; i++) {
+                    if(genN[i]) {
+                        let x = (i*pxSize) % svgWith
+                        let y = Math.trunc((i*pxSize) / svgWith)*pxSize
+                        ctx.fillRect(x, y, pxSize, pxSize);
+                    }
+                }
+            }
+
+            var shuffleGenN = function() {
+                for(let i = 0; i < elements; i++ ) {
+                    genN[i]= Math.random() <= 0.5
+                }
+            }
+
+            var glider = function() {
+                for(let i = 0; i < elements; i++ ) {
+                    genN[i]= 0
+                }
+
+                for(let i = 0; i+40 < lineLen; i+=40){
+                    genN[6*lineLen+1+i] = 1
+                    genN[6*lineLen+2+i] = 1
+                    genN[7*lineLen+1+i] = 1
+                    genN[7*lineLen+2+i] = 1
+
+                    genN[4*lineLen+13+i] = 1
+                    genN[4*lineLen+14+i] = 1
+                    genN[5*lineLen+12+i] = 1
+                    genN[6*lineLen+11+i] = 1
+                    genN[7*lineLen+11+i] = 1
+                    genN[8*lineLen+11+i] = 1
+                    genN[9*lineLen+12+i] = 1
+                    genN[10*lineLen+13+i] = 1
+                    genN[10*lineLen+14+i] = 1
+
+                    genN[7*lineLen+15+i] = 1
+                    genN[5*lineLen+16+i] = 1
+                    genN[9*lineLen+16+i] = 1
+                    genN[6*lineLen+17+i] = 1
+                    genN[7*lineLen+17+i] = 1
+                    genN[8*lineLen+17+i] = 1
+                    genN[7*lineLen+18+i] = 1
+
+                    genN[6*lineLen+21+i] = 1
+                    genN[5*lineLen+21+i] = 1
+                    genN[4*lineLen+21+i] = 1
+                    genN[6*lineLen+22+i] = 1
+                    genN[5*lineLen+22+i] = 1
+                    genN[4*lineLen+22+i] = 1
+                    
+                    genN[3*lineLen+23+i] = 1
+                    genN[7*lineLen+23+i] = 1
+
+                    genN[3*lineLen+25+i] = 1
+                    genN[2*lineLen+25+i] = 1
+                    genN[7*lineLen+25+i] = 1
+                    genN[8*lineLen+25+i] = 1
+
+                    genN[5*lineLen+35+i] = 1
+                    genN[5*lineLen+36+i] = 1
+                    genN[4*lineLen+35+i] = 1
+                    genN[4*lineLen+36+i] = 1
+                    console.log(i)
+                }
+            }
+
+            var calcGenNp1 = function() {
+                let genNp1 = []
+                for(let i = 0; i < genN.length; i++) {
+                    genNp1[i] = aliveNp1(i)
+                }
+                return genNp1
+            }
+
+            var aliveNp1 = function(i) {
+                let aliveNeigbors = 0
+                let above = i-lineLen
+                let below = i+lineLen
+                neigborIndexes = [above, below]
+                l = i%lineLen
+                if(l != 0) {
+                    neigborIndexes.push(i-1)
+                    neigborIndexes.push(above-1)
+                    neigborIndexes.push(below-1)
+                }
+                if(l+1 != lineLen){
+                    neigborIndexes.push(i+1)
+                    neigborIndexes.push(above+1)
+                    neigborIndexes.push(below+1)
+                }
+                for(n of neigborIndexes) {
+                    if(n >= 0 && n < genN.length && genN[n]) {
+                        aliveNeigbors++
+                    }
+                }
+                let cell = genN[i]
+                let r0 = (!cell && aliveNeigbors == 3)
+                let r1 = (cell && (aliveNeigbors>1 && aliveNeigbors<4))
+                let r = r0 || r1
+                return r
+            }
+
+            var animate = function() {
+                //let x = Date.now()
+                genN = calcGenNp1()
+                //console.log(Date.now()-x)
+                drawCanvas()
+                window.requestAnimationFrame(animate);
+            }
+
+            var animateWasm = function() {
+                loadWasm().then(wasm => {
+                    let animateW = function() {
+                        //let x = Date.now()
+                        genN = GoCalcNp1(lineLen)
+                        //console.log(Date.now()-x)
+                        drawCanvas()
+                        window.requestAnimationFrame(animateW);
+                    }
+                    animateW()
+                })
+            }
+
+            var loadWasm = function() {
+                console.log(go.importObject)
+                return new Promise((resolve, reject) => {
+                    WebAssembly.instantiateStreaming(fetch("./wasm.wasm"), go.importObject)
+                    .then(mod => {
+                        go.run(mod.instance)
+                        resolve(mod.instance)
+                    });
+                })
+            }
+
+            window.onload = function() {
+                //shuffleGenN()
+                glider()
+                drawCanvas(genN)
+                animate()
+            }
+
+        </script>
+    </body>
+</html>

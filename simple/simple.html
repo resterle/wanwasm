@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <title>simple wasm</title>
+    </head>
+    <body>
+        <script>
+
+            let print_from_wasm = function(param) {
+                console.log("Called from wasm. param: "+param)
+            }
+
+            const importObject = {
+                imports: { print: print_from_wasm },
+            };
+
+            WebAssembly.instantiateStreaming(fetch("./simple.wasm"), importObject)
+            .then((obj) => console.log(obj.instance.exports.add(39, 3)));
+        </script>
+    </body>
+</html>

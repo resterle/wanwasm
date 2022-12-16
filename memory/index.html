@@ -1,0 +1,22 @@
+<html>
+    <head>
+        <title>simple wasm</title>
+    </head>
+    <body>
+        <script>
+
+            const importObject = {};
+
+            WebAssembly.instantiateStreaming(fetch("./memory.wasm"), importObject)
+            .then((obj) => {
+                console.log(obj.instance.exports)
+                obj.instance.exports.add(39, 3)
+
+
+                let result = obj.instance.exports.result
+                let b = new Uint32Array(result.buffer)
+                console.log(b[0])
+            })
+        </script>
+    </body>
+</html>
